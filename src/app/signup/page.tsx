@@ -51,8 +51,34 @@ const SignupPage = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // TODO: Implement signup functionality
+
     console.log(values);
+
+    try {
+      const response = await fetch('/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create account');
+      }
+  
+      const data = await response.json();
+      console.log('Account created successfully:', data);
+
+      // TODO: Redirect to success page
+
+    } catch (error) {
+      console.error('Error creating account:', error);
+
+      // TODO: Redirect to error page
+
+    }
   };
 
   return (
