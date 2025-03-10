@@ -30,8 +30,33 @@ const LoginPage = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // TODO: Implement login functionality
+    
     console.log(values);
+
+    try {
+      const response = await fetch('/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to log in');
+      }
+  
+      const data = await response.json();
+      console.log('Login successful:', data);
+
+      // TODO: Handle successful login, e.g., store tokens, redirect, etc.
+      
+    } catch (error) {
+      console.error('Error logging in:', error);
+
+      // TODO: Redirect to error page
+    }
   };
 
   return (

@@ -31,10 +31,31 @@ const ForgotPasswordPage = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // TODO: Implement password reset functionality
+    
     console.log(values);
-    setSuccessEmail(values.email);
-    setIsSuccess(true);
+
+    try {
+      const response = await fetch('/password-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send reset link');
+      }
+  
+      const data = await response.json();
+      console.log('Password reset link sent:', data);
+      setSuccessEmail(values.email);
+      setIsSuccess(true);
+    } catch (error) {
+      console.error('Error sending reset link:', error);
+      // Show error message to the user
+    }
   };
 
   return (
