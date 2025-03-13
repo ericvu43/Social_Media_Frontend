@@ -162,32 +162,61 @@
             if (e.key === 'Enter') sendMessage();
         });
 
-        function sendMessage() {
-            if (!activeContact || !messageInput.value.trim()) return;
+        async function sendMessage() {
+        if (!activeContact || !messageInput.value.trim()) return;
 
-            const message = {
-                text: messageInput.value,
+        const message = {
+            recipient: activeContact,
+            content: messageInput.value,
+        };
+
+        try {
+            const response = await fetch('/api/messages/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify(message),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to send message');
+            }
+
+            const data = await response.json();
+            conversations[activeContact].push({
+                text: data.content,
                 sender: 'me',
-                time: new Date().toLocaleTimeString()
-            };
-
-            conversations[activeContact].push(message);
+                time: new Date(data.timestamp).toLocaleTimeString()
+            });
             messageInput.value = '';
             loadMessages();
-
-            // Simulate a reply after 1 second
-            setTimeout(() => {
-                conversations[activeContact].push({
-                    text: 'This is an automated reply!',
-                    sender: 'them',
-                    time: new Date().toLocaleTimeString()
-                });
-                loadMessages();
-            }, 1000);
+        } catch (error) {
+            console.error('Error sending message:', error);
         }
+    }
 
-        function loadMessages() {
-            if (!activeContact) return;
+    async function loadMessages() {
+        if (!activeContact) return;
+
+        try {
+            const response = await fetch(`/api/messages/?recipient=${activeContact}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load messages');
+            }
+
+            const data = await response.json();
+            conversations[activeContact] = data.map(msg => ({
+                text: msg.content,
+                sender: msg.sender === localStorage.getItem('authEmail') ? 'me' : 'them',
+                time: new Date(msg.timestamp).toLocaleTimeString()
+            }));
             messageArea.innerHTML = '';
             conversations[activeContact].forEach(msg => {
                 const div = document.createElement('div');
@@ -196,7 +225,10 @@
                 messageArea.appendChild(div);
             });
             messageArea.scrollTop = messageArea.scrollHeight;
+        } catch (error) {
+            console.error('Error loading messages:', error);
         }
+    }
     </script>
 </body>
 </html>
