@@ -71,18 +71,46 @@ export function ProfileForm() {
   });
 
   function onSubmit(data: ProfileFormValues) {
+    const token = localStorage.getItem('authToken'); // Retrieve the token
+    if (!token) {
+      console.error('No token found');
+      return;
+    }
+  
     setIsLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
+  
+    fetch('/accounts/profile/', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // Include the user's token for authentication
+      },
+      body: JSON.stringify(data),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          return response.json().then((errorData) => {
+            throw new Error(errorData.error || 'Failed to update profile');
+          });
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setIsLoading(false);
+        toast({
+          title: 'Profile updated',
+          description: 'Your profile has been updated successfully.',
+        });
+        console.log('Profile updated successfully:', data);
+      })
+      .catch((error) => {
+        setIsLoading(false);
+        console.error('Error updating profile:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to update profile. Please try again.',
+        });
       });
-    }, 1000);
-
-    console.log(data);
   }
 
   return (
