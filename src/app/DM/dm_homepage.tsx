@@ -28,9 +28,10 @@ const DMSystem: React.FC = () => {
 
   const handleContactClick = (contactId: string) => {
     setActiveContact(contactId);
+    loadMessages(contactId);
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!activeContact || !messageInput.trim()) return;
 
     const newMessage: Message = {
@@ -39,24 +40,59 @@ const DMSystem: React.FC = () => {
       time: new Date().toLocaleTimeString(),
     };
 
-    setConversations((prev) => ({
-      ...prev,
-      [activeContact]: [...prev[activeContact], newMessage],
-    }));
-    setMessageInput('');
+    try {
+      const response = await fetch('/api/messages/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({ recipient: activeContact, content: messageInput }),
+      });
 
-    setTimeout(() => {
-      const reply: Message = {
-        text: 'This is an automated reply!',
-        sender: 'them',
-        time: new Date().toLocaleTimeString(),
-      };
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const data = await response.json();
       setConversations((prev) => ({
         ...prev,
-        [activeContact]: [...prev[activeContact], reply],
+        [activeContact]: [...prev[activeContact], newMessage],
       }));
-    }, 1000);
+      setMessageInput('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
+
+  const loadMessages = async (contactId: string) => {
+    try {
+      const response = await fetch(`/api/messages/?recipient=${contactId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load messages');
+      }
+
+      const data = await response.json();
+      const loadedMessages = data.map((msg: any) => ({
+        text: msg.content,
+        sender: msg.sender === localStorage.getItem('authEmail') ? 'me' : 'them',
+        time: new Date(msg.timestamp).toLocaleTimeString()
+      }));
+
+      setConversations((prev) => ({
+        ...prev,
+        [contactId]: loadedMessages,
+      }));
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    }
+  };
+
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') sendMessage();
