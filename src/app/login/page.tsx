@@ -118,12 +118,6 @@ const LoginPage = () => {
               >
                 Forgot password?
               </a>
-              <a 
-                href="/otp-login" 
-                className="text-sm text-primary hover:underline"
-              >
-                Login with OTP
-              </a>
             </div>
 
             <Button type="submit" className="w-full">
