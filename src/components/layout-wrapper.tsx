@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 
 // Array of routes where we don't want to show the sidebar
-const publicRoutes = ["/login", "/signup", "/forgot-password"];
+const publicRoutes = ["/login", "/signup", "/forgot-password", "/otp-login"];
 
 interface LayoutWrapperProps {
   children: React.ReactNode;
