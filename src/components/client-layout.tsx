@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { MobileNav } from "@/components/mobile-nav";
 
 // Array of routes where we don't want to show the sidebar
-const publicRoutes = ["/login", "/signup", "/forgot-password", "/otp-login"];
+const publicRoutes = ["/login", "/signup", "/forgot-password"];
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -14,8 +14,6 @@ interface ClientLayoutProps {
 
 export function ClientLayout({ children }: ClientLayoutProps) {
   const pathname = usePathname();
-  const [isClient, setIsClient] = useState(false);
-
   const isPublicRoute = publicRoutes.includes(pathname);
 
   console.log("Current pathname:", pathname);
