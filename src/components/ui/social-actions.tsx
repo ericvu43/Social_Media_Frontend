@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { ThumbsUp, ExternalLink, MessageCircle, Send, User } from "lucide-react";
+import {
+  ThumbsUp,
+  ExternalLink,
+  MessageCircle,
+  Send,
+  User,
+} from "lucide-react";
 
 interface Comment {
   id: string;
@@ -17,7 +23,7 @@ interface SocialActionsProps {
   onComment?: (comment: string) => void;
 }
 
-function Avatar({ username }: { username: string }) {
+function Avatar({}: { username: string }) {
   return (
     <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
       <User size={16} className="text-gray-600" />
