@@ -51,33 +51,40 @@ const SignupPage = () => {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-
     console.log(values);
-
+  
+    // Add username and password2 fields
+    const requestData = {
+      ...values,
+      username: values.email,
+      password2: values.confirmPassword,
+    };
+  
     try {
-      const response = await fetch('/register', {
+      const response = await fetch('http://127.0.0.1:8000/api/auth/register/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(requestData),
       });
   
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Error response from server:', errorData);
         throw new Error(errorData.error || 'Failed to create account');
       }
   
       const data = await response.json();
       console.log('Account created successfully:', data);
+  
+      // Redirect to OTP verification page
+      window.location.href = '/OTP';
 
-      // TODO: Redirect to success page
-
+  
     } catch (error) {
       console.error('Error creating account:', error);
-
       // TODO: Redirect to error page
-
     }
   };
 
