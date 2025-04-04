@@ -3,9 +3,11 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { PostPopup } from "./PostPopup";
+import { useState } from "react";
 
 // Icons for the sidebar
-import { Settings, Home, Clock } from "lucide-react";
+import { Settings, Home, Clock, Plus } from "lucide-react";
 import { ProfileButton } from "./profile-button";
 
 interface SidebarProps {
@@ -14,6 +16,31 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
+  const [isPostPopupOpen, setIsPostPopupOpen] = useState(false);
+
+  const handlePostSubmit = async (newPost: { id: number; content: string }) => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/auth/posts/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`, // Include the access token
+        },
+        body: JSON.stringify({ content: newPost.content }), // Send the post content
+      });
+  
+      if (response.ok) {
+        console.log("Post created successfully");
+        setIsPostPopupOpen(false); // Close the popup after submission
+      } else {
+        console.error("Failed to create post");
+        const errorData = await response.json();
+        console.error("Error details:", errorData);
+      }
+    } catch (error) {
+      console.error("Error creating post:", error);
+    }
+  };
 
   const routes = [
     {
@@ -60,14 +87,32 @@ export function Sidebar({ className }: SidebarProps) {
           ))}
         </nav>
 
-        {/* Spacer to push profile button to bottom */}
+        {/* Spacer to push buttons to the bottom */}
         <div className="flex-1"></div>
+
+        {/* Create Post Button */}
+        <div className="px-4 py-4">
+          <button
+            className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-500 text-white rounded-md"
+            onClick={() => setIsPostPopupOpen(true)}
+          >   
+          <Plus className="h-5 w-5" />
+            Create Post
+          </button>
+        </div>
 
         {/* Profile button */}
         <div className="mt-auto px-4 py-4 border-t">
           <ProfileButton />
         </div>
       </div>
+
+      {/* Post Creation Popup */}
+      <PostPopup
+        isOpen={isPostPopupOpen}
+        onClose={() => setIsPostPopupOpen(false)}
+        onSubmit={handlePostSubmit}
+      />
     </div>
   );
 }

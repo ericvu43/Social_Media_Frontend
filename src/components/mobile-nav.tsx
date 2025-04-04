@@ -3,13 +3,21 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Home, Settings, Clock, Menu } from "lucide-react";
+import { Home, Settings, Clock, Menu, Plus } from "lucide-react";
 import { useState } from "react";
 import { ProfileButton } from "./profile-button";
+import { PostPopup } from "./PostPopup";
 
 export function MobileNav() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isPostPopupOpen, setIsPostPopupOpen] = useState(false);
+
+  const handlePostSubmit = (newPost: { id: number; content: string }) => {
+    console.log("Post content:", newPost.content);
+    // Add logic to send the post to the backend
+    setIsPostPopupOpen(false); // Close the popup after submission
+  };
 
   const routes = [
     {
@@ -66,6 +74,17 @@ export function MobileNav() {
               </nav>
             </div>
 
+            {/* Create Post Button */}
+            <div className="px-6 py-4 border-t">
+              <button
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md"
+                onClick={() => setIsPostPopupOpen(true)}
+              >
+                <Plus className="h-5 w-5" />
+                Create Post
+              </button>
+            </div>
+
             {/* Profile button */}
             <div className="px-6 py-4 border-t">
               <ProfileButton />
@@ -73,6 +92,13 @@ export function MobileNav() {
           </div>
         </div>
       )}
+
+      {/* Post Creation Popup */}
+      <PostPopup
+        isOpen={isPostPopupOpen}
+        onClose={() => setIsPostPopupOpen(false)}
+        onSubmit={handlePostSubmit}
+      />
     </div>
   );
 }
