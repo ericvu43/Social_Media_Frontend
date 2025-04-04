@@ -13,14 +13,46 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
 
+async function fetchCurrentUser() {
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/api/auth/users/me`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`, // Include the auth token
+      },
+    });
+
+    if (response.ok) {
+      return response.json();
+    } else {
+      console.error("Failed to fetch current user");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching current user:", error);
+    return null;
+  }
+}
+
 export function ProfileButton() {
   const router = useRouter();
 
+  const handleProfileClick = async () => {
+    const currentUser = await fetchCurrentUser();
+    if (currentUser && currentUser.id) {
+      router.push(`/profile/${currentUser.id}`); // Redirect to the user's profile page
+    } else {
+      console.error("User not logged in or failed to fetch user data");
+      toast({
+        title: "Error",
+        description: "Failed to fetch user data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleLogout = () => {
-    // Log the logout action
     console.log("User logged out");
 
-    // Use our simplified toast implementation
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
@@ -46,6 +78,13 @@ export function ProfileButton() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={handleProfileClick}
+          className="cursor-pointer"
+        >
+          <User className="mr-2 h-4 w-4" />
+          <span>View Profile</span>
+        </DropdownMenuItem>
         <DropdownMenuItem
           onClick={handleLogout}
           className="text-destructive cursor-pointer"
