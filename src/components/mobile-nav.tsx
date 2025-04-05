@@ -13,10 +13,29 @@ export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const [isPostPopupOpen, setIsPostPopupOpen] = useState(false);
 
-  const handlePostSubmit = (newPost: { id: number; content: string }) => {
-    console.log("Post content:", newPost.content);
-    // Add logic to send the post to the backend
-    setIsPostPopupOpen(false); // Close the popup after submission
+  const handlePostSubmit = async (content: string) => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/auth/posts/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`, // Include the access token
+        },
+        body: JSON.stringify({ content }), // Send the post content
+      });
+
+      if (response.ok) {
+        const newPost = await response.json();
+        console.log("Post created successfully:", newPost);
+        setIsPostPopupOpen(false); // Close the popup after submission
+      } else {
+        console.error("Failed to create post");
+        const errorData = await response.json();
+        console.error("Error details:", errorData);
+      }
+    } catch (error) {
+      console.error("Error creating post:", error);
+    }
   };
 
   const routes = [
@@ -97,7 +116,7 @@ export function MobileNav() {
       <PostPopup
         isOpen={isPostPopupOpen}
         onClose={() => setIsPostPopupOpen(false)}
-        onSubmit={handlePostSubmit}
+        onSubmit={(newPost) => handlePostSubmit(newPost.content)}
       />
     </div>
   );
