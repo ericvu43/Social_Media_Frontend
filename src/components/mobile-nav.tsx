@@ -3,13 +3,40 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Home, Settings, Clock, Menu } from "lucide-react";
+import { Home, Settings, Clock, Menu, Plus } from "lucide-react";
 import { useState } from "react";
 import { ProfileButton } from "./profile-button";
+import { PostPopup } from "./PostPopup";
 
 export function MobileNav() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [isPostPopupOpen, setIsPostPopupOpen] = useState(false);
+
+  const handlePostSubmit = async (content: string) => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/auth/posts/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`, // Include the access token
+        },
+        body: JSON.stringify({ content }), // Send the post content
+      });
+
+      if (response.ok) {
+        const newPost = await response.json();
+        console.log("Post created successfully:", newPost);
+        setIsPostPopupOpen(false); // Close the popup after submission
+      } else {
+        console.error("Failed to create post");
+        const errorData = await response.json();
+        console.error("Error details:", errorData);
+      }
+    } catch (error) {
+      console.error("Error creating post:", error);
+    }
+  };
 
   const routes = [
     {
@@ -66,6 +93,17 @@ export function MobileNav() {
               </nav>
             </div>
 
+            {/* Create Post Button */}
+            <div className="px-6 py-4 border-t">
+              <button
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md"
+                onClick={() => setIsPostPopupOpen(true)}
+              >
+                <Plus className="h-5 w-5" />
+                Create Post
+              </button>
+            </div>
+
             {/* Profile button */}
             <div className="px-6 py-4 border-t">
               <ProfileButton />
@@ -73,6 +111,13 @@ export function MobileNav() {
           </div>
         </div>
       )}
+
+      {/* Post Creation Popup */}
+      <PostPopup
+        isOpen={isPostPopupOpen}
+        onClose={() => setIsPostPopupOpen(false)}
+        onSubmit={(newPost) => handlePostSubmit(newPost.content)}
+      />
     </div>
   );
 }
