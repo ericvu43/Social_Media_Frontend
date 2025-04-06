@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import {
   ThumbsUp,
   ExternalLink,
@@ -10,20 +10,21 @@ import {
 } from "lucide-react";
 
 interface Comment {
-  id: string;
-  text: string;
-  username: string;
+  id: number;
+  content: string;
+  user: string;
+  created_at: string;
 }
 
 interface SocialActionsProps {
+  postId: number;
   initialLikes?: number;
   initialComments?: Comment[];
   onLike?: () => void;
-  onShare?: () => void;
   onComment?: (comment: string) => void;
 }
 
-function Avatar({}: { username: string }) {
+function Avatar({ username }: { username: string }) {
   return (
     <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
       <User size={16} className="text-gray-600" />
@@ -32,10 +33,10 @@ function Avatar({}: { username: string }) {
 }
 
 export function SocialActions({
+  postId,
   initialLikes = 0,
   initialComments = [],
   onLike,
-  onShare,
   onComment,
 }: SocialActionsProps) {
   const [likes, setLikes] = useState(initialLikes);
@@ -44,41 +45,135 @@ export function SocialActions({
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<Comment[]>(initialComments);
 
-  // Mock user data - in a real app this would come from auth context
   const currentUser = {
     username: "Current User",
   };
 
-  const handleLike = () => {
-    if (liked) {
-      setLikes(likes - 1);
-    } else {
-      setLikes(likes + 1);
+  useEffect(() => {
+    const fetchPostDetails = async () => {
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/api/auth/posts/${postId}/`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setLikes(data.likes); // Set the total likes
+          setLiked(data.user_liked); // Set whether the user has liked the post
+        } else {
+          console.error("Failed to fetch post details");
+        }
+      } catch (error) {
+        console.error("Error fetching post details:", error);
+      }
+    };
+
+    fetchPostDetails();
+  }, [postId]);
+
+  const handleLike = async () => {
+    try {
+      if (liked) {
+        // Unlike the post
+        const response = await fetch(`http://127.0.0.1:8000/api/auth/likes/${postId}/`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+        });
+
+        if (response.ok) {
+          setLikes((prevLikes) => prevLikes - 1);
+          setLiked(false);
+        } else {
+          console.error("Failed to unlike post");
+        }
+      } else {
+        // Like the post
+        const response = await fetch("http://127.0.0.1:8000/api/auth/likes/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+          body: JSON.stringify({ post: postId }),
+        });
+
+        if (response.ok) {
+          setLikes((prevLikes) => prevLikes + 1);
+          setLiked(true);
+        } else {
+          console.error("Failed to like post");
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error);
     }
-    setLiked(!liked);
-    onLike?.();
   };
 
   const handleShare = () => {
-    // TODO: Implement share functionality backend and then frontend
-    onShare?.();
+    const postUrl = `${window.location.origin}/posts/${postId}`;
+    navigator.clipboard
+      .writeText(postUrl)
+      .then(() => {
+        alert("Post link copied to clipboard!");
+      })
+      .catch((err) => {
+        console.error("Failed to copy link: ", err);
+      });
   };
 
-  const handleComment = () => {
-    setShowCommentInput(!showCommentInput);
-    onComment?.(commentText);
+  const fetchComments = async () => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/auth/posts/${postId}/comments/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setComments(data);
+      } else {
+        console.error("Failed to fetch comments");
+      }
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    }
   };
 
-  const submitComment = (e: FormEvent) => {
+  useEffect(() => {
+    fetchComments();
+  }, []);
+
+  const submitComment = async (e: FormEvent) => {
     e.preventDefault();
     if (commentText.trim()) {
-      const newComment: Comment = {
-        id: Date.now().toString(),
-        text: commentText,
-        username: currentUser.username,
-      };
-      setComments([...comments, newComment]);
-      setCommentText("");
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/auth/comments/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+          },
+          body: JSON.stringify({
+            content: commentText,
+            post: postId,
+          }),
+        });
+
+        if (response.ok) {
+          const newComment = await response.json();
+          setComments((prevComments) => [newComment, ...prevComments]);
+          setCommentText("");
+        } else {
+          console.error("Failed to submit comment");
+        }
+      } catch (error) {
+        console.error("Error submitting comment:", error);
+      }
     }
   };
 
@@ -105,7 +200,7 @@ export function SocialActions({
         </button>
 
         <button
-          onClick={handleComment}
+          onClick={() => setShowCommentInput(!showCommentInput)}
           className="flex items-center gap-1 text-sm text-gray-600"
         >
           <MessageCircle size={18} />
@@ -115,10 +210,8 @@ export function SocialActions({
         </button>
       </div>
 
-      {/* Comment section */}
       {(showCommentInput || comments.length > 0) && (
         <div className="mt-4 border-t pt-3">
-          {/* Comment input */}
           {showCommentInput && (
             <form
               onSubmit={submitComment}
@@ -142,17 +235,16 @@ export function SocialActions({
             </form>
           )}
 
-          {/* Comments list */}
           {comments.length > 0 && (
             <div className="space-y-3">
               {comments.map((comment) => (
                 <div key={comment.id} className="flex gap-2">
-                  <Avatar username={comment.username} />
+                  <Avatar username={comment.user} />
                   <div className="bg-gray-100 px-3 py-2 rounded-lg max-w-[85%]">
                     <div className="text-xs font-medium">
-                      {comment.username}
+                      {comment.user}
                     </div>
-                    <div className="text-sm">{comment.text}</div>
+                    <div className="text-sm">{comment.content}</div>
                   </div>
                 </div>
               ))}

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Search } from "@/components/ui/search";
-import { SocialActions } from "@/components/ui/social-actions";
+import { Post } from "@/components/Post";
 
-interface Post {
+interface PostData {
   id: number;
   user: string;
   content: string;
@@ -13,7 +13,7 @@ interface Post {
 }
 
 export default function FeedPage() {
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,6 +53,7 @@ export default function FeedPage() {
           posts.map((post) => (
             <Post
               key={post.id}
+              postId={post.id}
               user={post.user}
               content={post.content}
               createdAt={post.created_at}
@@ -63,17 +64,6 @@ export default function FeedPage() {
         )}
         <div className="mt-4 text-center text-gray-500">End of Feed</div>
       </div>
-    </div>
-  );
-}
-
-function Post({ user, content, createdAt }: { user: string; content: string; createdAt: string }) {
-  return (
-    <div className="rounded-lg border p-4 mb-4">
-      <h3 className="font-medium mb-2">{user}</h3>
-      <p className="text-gray-600 mb-3">{content}</p>
-      <p className="text-sm text-gray-400">{new Date(createdAt).toLocaleString()}</p>
-      <SocialActions initialLikes={0} initialComments={[]} />
     </div>
   );
 }
